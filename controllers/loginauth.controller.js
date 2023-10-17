@@ -25,7 +25,7 @@ const userAuthSchema = yup.object().shape({
 });
 
 module.exports = {
-  // Customer login controller
+  //  One login for all users(customer, seller, admin) controller
   loginUser: async (req, res) => {
     try {
       const userData = req.body;

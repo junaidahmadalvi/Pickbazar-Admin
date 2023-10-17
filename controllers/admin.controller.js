@@ -11,152 +11,21 @@ const {
   adminLoginSchema,
 } = require("../models/admin.model");
 
+const { Seller } = require("../models/seller.model");
+const { Customer } = require("../models/customer.model");
+const {
+  Author,
+  addAuthorSchema,
+  authorUpdateSchema,
+} = require("../models/author.model");
+
+const {
+  Group,
+  addGroupSchema,
+  groupUpdateSchema,
+} = require("../models/group.model");
+
 module.exports = {
-  registerAdmin: async (req, res) => {
-    try {
-      let adminData = req.body;
-
-      adminData &&
-        (await adminRegisterSchema.validate(adminData, {
-          abortEarly: false,
-        }));
-
-      let admin = await Admin.findOne({ email: adminData?.email });
-
-      // validate email exist
-      if (admin) {
-        res.status(400).json({
-          status: "fail",
-          error: "email already exist",
-        });
-      } else {
-        // validate password and confirmPassword match
-        if (adminData?.password != adminData?.confirmPassword) {
-          res.status(400).json({
-            status: "fail",
-            error: "Password and Confirm Password must be same",
-          });
-        } else {
-          const salt = await bcrypt.genSalt(Number(process.env.SALT));
-          const hashpswd = await bcrypt.hash(adminData?.password, salt);
-
-          let requestData = {
-            name: adminData?.name,
-            email: adminData?.email,
-            password: hashpswd,
-          };
-
-          admin = new Admin(requestData);
-
-          const result = await admin.save();
-
-          res.status(200).send({
-            status: "success",
-            message: "Admin added Successfully",
-            data: result,
-          });
-        }
-      }
-    } catch (error) {
-      if (error.name === "ValidationError") {
-        const validationErrors = {};
-
-        error.inner &&
-          error.inner.length > 0 &&
-          error.inner.forEach((validationError) => {
-            validationErrors[validationError.path] = validationError.message;
-          });
-
-        const entries = Object.entries(validationErrors);
-        entries &&
-          entries.length > 0 &&
-          res.status(400).json({
-            status: "fail",
-            error: entries[0][1],
-          });
-      } else {
-        console.log("internal server error", error);
-        res.status(500).json({
-          status: "fail",
-          error: `Internal server Error`,
-        });
-      }
-    }
-  },
-
-  // Admin login controller
-  loginAdmin: async (req, res) => {
-    try {
-      const adminData = req.body;
-
-      adminData &&
-        (await adminLoginSchema.validate(adminData, {
-          abortEarly: false,
-        }));
-      const { email, password } = req.body;
-      let admin = await Admin.findOne({ email: email });
-
-      if (admin != null) {
-        // check given password match with DB password of particular admin OR not and return true/false
-        const isMatch = await bcrypt.compare(password, admin?.password);
-
-        if (admin.email === email && isMatch) {
-          // Generate JWT Token
-          const token = jwt.sign(
-            { adminId: admin._id },
-            process.env.JWT_SECRET_KEY,
-            { expiresIn: "2d" }
-          );
-
-          res.setHeader("Authorization", `Bearer ${token}`);
-
-          //remove password field from admin object
-          delete admin?.password;
-          res.status(200).send({
-            status: "success",
-            message: "Login Success",
-            token: token,
-            data: admin,
-          });
-        } else {
-          res.status(400).json({
-            status: "fail",
-            error: "Email or password is not Valid",
-          });
-        }
-      } else {
-        res.status(400).json({
-          status: "fail",
-          error: "Email or password is not Valid",
-        });
-      }
-    } catch (error) {
-      if (error.name === "ValidationError") {
-        const validationErrors = {};
-
-        error.inner &&
-          error.inner.length > 0 &&
-          error.inner.forEach((validationError) => {
-            validationErrors[validationError.path] = validationError.message;
-          });
-
-        const entries = Object.entries(validationErrors);
-        entries &&
-          entries.length > 0 &&
-          res.status(400).json({
-            status: "fail",
-            error: entries[0][1],
-          });
-      } else {
-        console.log("internal server error", error);
-        res.status(500).json({
-          status: "fail",
-          error: `Internal server Error`,
-        });
-      }
-    }
-  },
-
   // // show  all Admins
   getAllAdmin: async (req, res) => {
     try {
@@ -179,14 +48,14 @@ module.exports = {
       console.log("internal server error", error);
       res.status(500).json({
         status: "fail",
-        error: `Internal server Error`,
+        error: `Internal server Error 1`,
       });
     }
   },
 
   getAdminById: async (req, res) => {
     try {
-      const adminId = req.params?.adminId;
+      const adminId = req?.adminId;
 
       // get desired admin data except password
       const admin = await Admin.findById(adminId, "-password");
@@ -201,6 +70,621 @@ module.exports = {
         res.status(400).json({
           status: "fail",
           error: "Admin not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error 2`,
+      });
+    }
+  },
+
+  // <--------Sellers-------------->
+
+  // // show  all Sellers
+  getAllSeller: async (req, res) => {
+    try {
+      // get all sellers data except password property
+      let seller = await Seller.find({}, "-password");
+
+      if (seller) {
+        res.status(200).send({
+          status: "success",
+          message: "Sellers got successfully",
+          data: seller,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Seller not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+  // get seller  by id
+  getSellerById: async (req, res) => {
+    try {
+      const sellerId = req.params?.sellerId;
+
+      // get desired seller data except password
+      const seller = await Seller.findById(sellerId, "-password");
+
+      if (seller) {
+        res.status(200).send({
+          status: "success",
+          message: "Seller founded",
+          data: seller,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Seller not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+
+      if (error.name === "CastError") {
+        res.status(500).json({
+          status: "fail",
+          error: `Invalid ID fomate `,
+        });
+      } else {
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error `,
+        });
+      }
+    }
+  },
+
+  // delete seller
+  deleteSeller: async (req, res) => {
+    try {
+      const sellerId = req.params?.sellerId;
+
+      let deletedResult = await Seller.findByIdAndDelete(sellerId);
+
+      if (deletedResult) {
+        res.status(200).send({
+          status: "fail",
+          message: "Seller deleted",
+          data: deletedResult,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Seller not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  // <---------------customer--------------->
+
+  // show  all Customers
+  getAllCustomer: async (req, res) => {
+    try {
+      // get all customers data except password property
+      let customer = await Customer.find({}, "-password");
+
+      if (customer) {
+        res.status(200).send({
+          status: "success",
+          message: "Customers got successfully",
+          data: customer,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Customer not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+  // get customer by id
+  getCustomerById: async (req, res) => {
+    try {
+      const customerId = req.params?.customerId;
+
+      // get desired customer data except password
+      const customer = await Customer.findById(customerId, "-password");
+
+      if (customer) {
+        res.status(200).send({
+          status: "success",
+          message: "Customer founded",
+          data: customer,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Customer not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      if (error.name === "CastError") {
+        res.status(500).json({
+          status: "fail",
+          error: `Invalid ID fomate `,
+        });
+      } else {
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error `,
+        });
+      }
+    }
+  },
+  // delete customer
+  deleteCustomer: async (req, res) => {
+    try {
+      const customerId = req.params?.customerId;
+
+      let deletedResult = await Customer.findByIdAndDelete(customerId);
+
+      if (deletedResult) {
+        res.status(200).send({
+          status: "fail",
+          message: "Customer deleted",
+          data: deletedResult,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Customer not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  // <------------Groups-------------->
+
+  addGroup: async (req, res) => {
+    try {
+      let groupData = req.body;
+
+      groupData &&
+        (await addGroupSchema.validate(groupData, {
+          abortEarly: false,
+        }));
+
+      let group = await Group.findOne({ name: groupData?.name });
+
+      // validate same name
+      if (group) {
+        res.status(400).json({
+          status: "fail",
+          error: "Try another group name",
+        });
+      } else {
+        group = new Group(groupData);
+
+        const result = await group.save();
+
+        result &&
+          res.status(200).send({
+            status: "success",
+            message: "Group added Successfully",
+            data: result,
+          });
+      }
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error`,
+        });
+      }
+    }
+  },
+
+  // // show  all Groups
+  getAllGroup: async (req, res) => {
+    try {
+      // get all groups data
+      let group = await Group.find({});
+
+      if (group) {
+        res.status(200).send({
+          status: "success",
+          message: "Groups got successfully",
+          data: group,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Group not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  getGroupById: async (req, res) => {
+    try {
+      const groupId = req.params?.groupId;
+
+      // get desired group data
+      const group = await Group.findById(groupId);
+
+      if (group) {
+        res.status(200).send({
+          status: "success",
+          message: "Group founded",
+          data: group,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Group not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      if (error.name === "CastError") {
+        res.status(500).json({
+          status: "fail",
+          error: `Invalid ID fomate `,
+        });
+      } else {
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error `,
+        });
+      }
+    }
+  },
+
+  updateGroup: async (req, res) => {
+    try {
+      const groupId = req?.params?.groupId;
+
+      const updateFields = req.body;
+
+      updateFields &&
+        (await groupUpdateSchema.validate(updateFields, {
+          abortEarly: false,
+        }));
+
+      const group = await Group.findById(groupId);
+
+      if (!group) {
+        return res
+          .status(404)
+          .json({ status: "fail", error: "Group not found" });
+      }
+
+      // Loop through the updateFields object to dynamically update each field
+      for (const field in updateFields) {
+        if (Object.hasOwnProperty.call(updateFields, field)) {
+          // Check if the field exists in the group schema
+          if (group.schema.path(field)) {
+            // Update the field with the new value
+            group[field] = updateFields[field];
+          }
+        }
+      }
+
+      // let isNameExist = await Group.findOne({ name: group?.name });
+
+      // // validate email exist
+      // if (isNameExist) {
+      //   console.log("pre-finded group id", group?._id);
+      //   console.log("Current-finded group id", isNameExist?._id);
+
+      //   if (isNameExist?._id != group?._id) {
+      //     res.status(400).json({
+      //       status: "fail",
+      //       error: "-------Try another group name ",
+      //     });
+      //   }
+      // } else {
+      //   // Save the updated group document
+      const updatedGroup = await group.save();
+
+      updatedGroup &&
+        res.status(200).json({
+          status: "success",
+          message: "Group updated successfully",
+          data: updatedGroup,
+        });
+      // }
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error`,
+        });
+      }
+    }
+  },
+
+  deleteGroup: async (req, res) => {
+    try {
+      const groupId = req.params?.groupId;
+
+      let deletedResult = await Group.findByIdAndDelete(groupId);
+
+      if (deletedResult) {
+        res.status(200).send({
+          status: "fail",
+          message: "Group deleted",
+          data: deletedResult,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Group not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  // <------------------Author-------------------->
+
+  addAuthor: async (req, res) => {
+    try {
+      let authorData = req.body;
+
+      authorData &&
+        (await addAuthorSchema.validate(authorData, {
+          abortEarly: false,
+        }));
+
+      const author = new Author(authorData);
+
+      const result = await author.save();
+
+      result &&
+        res.status(200).send({
+          status: "success",
+          message: "Author added Successfully",
+          data: result,
+        });
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error`,
+        });
+      }
+    }
+  },
+
+  // // show  all Authors
+  getAllAuthor: async (req, res) => {
+    try {
+      // get all authors data except password property
+      let author = await Author.find({});
+
+      if (author) {
+        res.status(200).send({
+          status: "success",
+          message: "Authors got successfully",
+          data: author,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Author not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  getAuthorById: async (req, res) => {
+    try {
+      const authorId = req.params?.authorId;
+
+      // get desired author data
+      const author = await Author.findById(authorId);
+
+      if (author) {
+        res.status(200).send({
+          status: "success",
+          message: "Author founded",
+          data: author,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Author not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+
+      if (error.name === "CastError") {
+        res.status(500).json({
+          status: "fail",
+          error: `Invalid ID fomate `,
+        });
+      } else {
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error `,
+        });
+      }
+    }
+  },
+
+  updateAuthor: async (req, res) => {
+    try {
+      const authorId = req?.params?.authorId;
+
+      const updateFields = req.body;
+
+      updateFields &&
+        (await authorUpdateSchema.validate(updateFields, {
+          abortEarly: false,
+        }));
+
+      const author = await Author.findById(authorId);
+
+      if (!author) {
+        return res
+          .status(404)
+          .json({ status: "fail", error: "Author not found" });
+      }
+
+      // Loop through the updateFields object to dynamically update each field
+      for (const field in updateFields) {
+        if (Object.hasOwnProperty.call(updateFields, field)) {
+          // Check if the field exists in the author schema
+          if (author.schema.path(field)) {
+            // Update the field with the new value
+            author[field] = updateFields[field];
+          }
+        }
+      }
+
+      // Save the updated author document
+      const updatedAuthor = await author.save();
+
+      res.status(200).json({
+        status: "success",
+        message: "Author updated successfully",
+        data: updatedAuthor,
+      });
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error: ${error}`,
+        });
+      }
+    }
+  },
+
+  deleteAuthor: async (req, res) => {
+    try {
+      const authorId = req.params?.authorId;
+
+      let deletedResult = await Author.findByIdAndDelete(authorId);
+
+      if (deletedResult) {
+        res.status(200).send({
+          status: "fail",
+          message: "Author deleted",
+          data: deletedResult,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Author not found",
         });
       }
     } catch (error) {

@@ -5,16 +5,12 @@ const cors = require("cors");
 const connection = require("./config/db");
 var bodyParser = require("body-parser");
 
-//------------- group rputes have to test on postman-----------------
-
 // require all routes
 
-const authRoute = require("./routes/auth.route");
 const adminRoute = require("./routes/admin.route");
-const customerRoute = require("./routes/customer.route");
-const sellerRoute = require("./routes/seller.route");
-const authorRoute = require("./routes/auhtor.route");
-const groupRoute = require("./routes/group.route");
+
+// require auth middleware
+const adminAuth = require("./middleware/admin.auth");
 
 // DB-Connection
 connection();
@@ -35,23 +31,18 @@ app.get("/", (req, res) => {
 
 //-----defining base routes of all entities--------
 
-// auth for user-login-type
-app.use("/api/auth", authRoute);
+// <--------------------------OPEN ROUTES----------------------------->
+// auth for login and signup
+app.post("/auth/adminRegister", adminAuth.registerAdmin);
+app.post("/auth/adminLogin", adminAuth.loginAdmin);
+app.post("/auth/login", adminAuth.loginUser);
 
+// auth globle middleware
+app.use(adminAuth.authenticateAdmin);
+
+// <--------------------------PROTECTED ROUTES----------------------------->
 // admin route
 app.use("/api/admin", adminRoute);
-
-// customer route
-app.use("/api/customer", customerRoute);
-
-// seller route
-app.use("/api/seller", sellerRoute);
-
-// author route
-app.use("/api/author", authorRoute);
-
-// group route
-app.use("/api/group", groupRoute);
 
 // start node server
 const PORT = process.env.PORT || 4000;

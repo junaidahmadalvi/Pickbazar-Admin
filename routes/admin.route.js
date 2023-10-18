@@ -58,4 +58,18 @@ router.delete("/deleteAuthor/:authorId", adminController.deleteAuthor);
 // *********************************************
 // router.delete("/*", adminController.noRoutFound);
 
+//<-----------Shops----------->
+
+router.post("/addShop", adminController.addShop);
+// get all shops
+router.get("/shops", adminController.getAllShops);
+// get single author
+router.get("/shop/:shopId", adminController.getShopById);
+// dynamic update any field(Single or multiple) of author(only by admin)
+router.put("/updateShop/:shopId", adminController.updateShop);
+// update shop address after validation
+router.patch("/shopAddress/:shopId", adminController.updateShopAddresses);
+//---Delete shops by id
+router.delete("/deleteShop/:shopId", adminController.deleteShop);
+
 module.exports = router;

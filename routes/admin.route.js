@@ -55,21 +55,47 @@ router.put("updateAuthor/:authorId", adminController.updateAuthor);
 //---Delete Author by id
 router.delete("/deleteAuthor/:authorId", adminController.deleteAuthor);
 
-// *********************************************
-// router.delete("/*", adminController.noRoutFound);
+// <----------------Manufacturer--------------------->
+
+// add-manufacturer
+router.post("/addManufacturer", adminController.addManufacturer);
+// get all manufacturers
+router.get("/manufacturers", adminController.getAllManufacturer);
+// get single manufacturer
+router.get(
+  "/manufacturer/:manufacturerId",
+  adminController.getManufacturerById
+);
+// dynamic update any field(Single or multiple) of manufacturer(only by admin)
+router.put(
+  "/updateManufacturer/:manufacturerId",
+  adminController.updateManufacturer
+);
+//---Delete Manufacturer by id
+router.delete(
+  "/deleteManufacturer/:manufacturerId",
+  adminController.deleteManufacturer
+);
 
 //<-----------Shops----------->
 
 router.post("/addShop", adminController.addShop);
 // get all shops
 router.get("/shops", adminController.getAllShops);
-// get single author
+// get single shop
 router.get("/shop/:shopId", adminController.getShopById);
-// dynamic update any field(Single or multiple) of author(only by admin)
+// dynamic update any field(Single or multiple) of shop(only by admin)
 router.put("/updateShop/:shopId", adminController.updateShop);
 // update shop address after validation
 router.patch("/shopAddress/:shopId", adminController.updateShopAddresses);
 //---Delete shops by id
 router.delete("/deleteShop/:shopId", adminController.deleteShop);
+
+//<-----------Contact Us----------->
+
+// get all contact
+router.get("/contacts", adminController.getAllContacts);
+// get single contact
+router.get("/contact/:contactId", adminController.getContactById);
 
 module.exports = router;

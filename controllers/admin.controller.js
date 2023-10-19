@@ -20,6 +20,11 @@ const {
 } = require("../models/author.model");
 
 const {
+  Manufacturer,
+  yupManufacturerSchema,
+} = require("../models/manufacterer.model");
+
+const {
   Group,
   addGroupSchema,
   groupUpdateSchema,
@@ -29,6 +34,7 @@ const {
   shopYupSchema,
   shopYupUpdateAddressSchema,
 } = require("../models/shop.model");
+const { Contact } = require("../models/contact.model");
 
 module.exports = {
   // // show  all Admins
@@ -701,13 +707,231 @@ module.exports = {
     }
   },
 
+  // <------------------Manufacturer-------------------->
+
+  addManufacturer: async (req, res) => {
+    try {
+      let manufacturerData = req.body;
+
+      manufacturerData &&
+        (await yupManufacturerSchema.validate(manufacturerData, {
+          abortEarly: false,
+        }));
+      const groupExist = await Group.findById(manufacturerData?.groupId);
+      if (groupExist) {
+        const manufacturer = new Manufacturer(manufacturerData);
+
+        const result = await manufacturer.save();
+
+        result &&
+          res.status(200).send({
+            status: "success",
+            message: "Manufacturer added Successfully",
+            data: result,
+          });
+      } else {
+        res.status(401).send({
+          status: "fail",
+          error: "Group not found",
+        });
+      }
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error`,
+        });
+      }
+    }
+  },
+
+  // // show  all Manufacturers
+  getAllManufacturer: async (req, res) => {
+    try {
+      // get all manufacturers data
+      let manufacturer = await Manufacturer.find({});
+
+      if (manufacturer) {
+        res.status(200).send({
+          status: "success",
+          message: "Manufacturers got successfully",
+          data: manufacturer,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Manufacturer not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  getManufacturerById: async (req, res) => {
+    try {
+      const manufacturerId = req.params?.manufacturerId;
+
+      // get desired manufacturer data
+      const manufacturer = await Manufacturer.findById(manufacturerId);
+
+      if (manufacturer) {
+        res.status(200).send({
+          status: "success",
+          message: "Manufacturer founded",
+          data: manufacturer,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Manufacturer not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+
+      if (error.name === "CastError") {
+        res.status(500).json({
+          status: "fail",
+          error: `Invalid ID fomate `,
+        });
+      } else {
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error `,
+        });
+      }
+    }
+  },
+
+  updateManufacturer: async (req, res) => {
+    try {
+      const manufacturerId = req?.params?.manufacturerId;
+
+      const updateFields = req.body;
+
+      updateFields &&
+        (await yupManufacturerSchema.validate(updateFields, {
+          abortEarly: false,
+        }));
+
+      const manufacturer = await Manufacturer.findById(manufacturerId);
+
+      if (!manufacturer) {
+        return res
+          .status(404)
+          .json({ status: "fail", error: "Manufacturer not found" });
+      }
+
+      // Loop through the updateFields object to dynamically update each field
+      for (const field in updateFields) {
+        if (Object.hasOwnProperty.call(updateFields, field)) {
+          // Check if the field exists in the manufacturer schema
+          if (manufacturer.schema.path(field)) {
+            // Update the field with the new value
+            manufacturer[field] = updateFields[field];
+          }
+        }
+      }
+
+      const groupExist = await Group.findById(manufacturer?.groupId);
+      if (groupExist) {
+        // Save the updated manufacturer document
+        const updatedManufacturer = await manufacturer.save();
+
+        res.status(200).json({
+          status: "success",
+          message: "Manufacturer updated successfully",
+          data: updatedManufacturer,
+        });
+      } else {
+        res.status(401).send({
+          status: "fail",
+          error: "Group not found",
+        });
+      }
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error: ${error}`,
+        });
+      }
+    }
+  },
+
+  deleteManufacturer: async (req, res) => {
+    try {
+      const manufacturerId = req.params?.manufacturerId;
+
+      let deletedResult = await Manufacturer.findByIdAndDelete(manufacturerId);
+
+      if (deletedResult) {
+        res.status(200).send({
+          status: "fail",
+          message: "Manufacturer deleted",
+          data: deletedResult,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Manufacturer not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
   // =====================================================================================================================
 
   // <------------------Shop-------------------->
 
   addShop: async (req, res) => {
     try {
-      debugger;
+      // debugger;
 
       let shopData = req.body;
 
@@ -716,18 +940,27 @@ module.exports = {
           abortEarly: false,
         }));
 
-      const shop = new Shop(shopData);
-      console.log("shop", shop);
+      const sellerExist = await Seller.findById(
+        shopData?.sellerId,
+        "-password"
+      );
 
-      console.log("----------Before shop.save()");
-      const result = await shop.save();
-      console.log("-------------After shop.save()");
-      result &&
-        res.status(200).send({
-          status: "success",
-          message: "Shop added Successfully",
-          data: result,
+      if (sellerExist) {
+        const shop = new Shop(shopData);
+
+        const result = await shop.save();
+        result &&
+          res.status(200).send({
+            status: "success",
+            message: "Shop added Successfully",
+            data: result,
+          });
+      } else {
+        res.status(400).send({
+          status: "fail",
+          error: "SellerId not Found",
         });
+      }
     } catch (error) {
       if (error.name === "ValidationError") {
         const validationErrors = {};
@@ -757,7 +990,6 @@ module.exports = {
       }
     }
   },
-
   // // show  all Shops
   getAllShops: async (req, res) => {
     try {
@@ -849,14 +1081,23 @@ module.exports = {
         }
       }
 
-      // Save the updated shop document
-      const updatedShop = await shop.save();
+      const sellerExist = await Seller.findById(shop?.sellerId, "-password");
 
-      res.status(200).json({
-        status: "success",
-        message: "Shop updated successfully",
-        data: updatedShop,
-      });
+      if (sellerExist) {
+        // Save the updated shop document
+        const updatedShop = await shop.save();
+
+        res.status(200).json({
+          status: "success",
+          message: "Shop updated successfully",
+          data: updatedShop,
+        });
+      } else {
+        res.status(400).send({
+          status: "fail",
+          error: "SellerId not Found",
+        });
+      }
     } catch (error) {
       if (error.name === "ValidationError") {
         const validationErrors = {};
@@ -971,6 +1212,69 @@ module.exports = {
         status: "fail",
         error: `Internal server Error`,
       });
+    }
+  },
+
+  // <------------------Contact Us-------------------->
+
+  // // show  all Contacts
+  getAllContacts: async (req, res) => {
+    try {
+      let contact = await Contact.find({});
+
+      if (contact) {
+        res.status(200).send({
+          status: "success",
+          message: "Contacts got successfully",
+          data: contact,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Contact not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  getContactById: async (req, res) => {
+    try {
+      const contactId = req.params?.contactId;
+      // get desired contact data
+      const contact = await Contact.findById(contactId);
+
+      if (contact) {
+        res.status(200).send({
+          status: "success",
+          message: "Contact founded",
+          data: contact,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Contact not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+
+      if (error.name === "CastError") {
+        res.status(500).json({
+          status: "fail",
+          error: `Invalid ID fomate `,
+        });
+      } else {
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error `,
+        });
+      }
     }
   },
 };

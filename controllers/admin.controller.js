@@ -43,6 +43,8 @@ const {
   shopYupSchema,
   shopYupUpdateAddressSchema,
 } = require("../models/shop.model");
+
+const { Order, orderYupSchema } = require("../models/order.model");
 const { Contact } = require("../models/contact.model");
 
 module.exports = {
@@ -1081,6 +1083,191 @@ module.exports = {
         status: "fail",
         error: `Internal server Error`,
       });
+    }
+  },
+
+  // <------------Orders-------------->
+
+  addOrder: async (req, res) => {
+    try {
+      let orderData = req.body;
+
+      orderData &&
+        (await orderYupSchema.validate(orderData, {
+          abortEarly: false,
+        }));
+
+      let customerExist = await Customer.findById(orderData?.customerId);
+
+      // validate same name
+      if (!customerExist) {
+        res.status(400).json({
+          status: "fail",
+          error: "Invalid Customer",
+        });
+      } else {
+        const order = new Order(orderData);
+
+        const result = await order.save();
+
+        result &&
+          res.status(200).send({
+            status: "success",
+            message: "Order added Successfully",
+            data: result,
+          });
+      }
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error`,
+        });
+      }
+    }
+  },
+
+  // // show  all Orders
+  getAllOrder: async (req, res) => {
+    try {
+      // get all orders data
+      let order = await Order.find({});
+
+      if (order) {
+        res.status(200).send({
+          status: "success",
+          message: "Orders got successfully",
+          data: order,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Order not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      res.status(500).json({
+        status: "fail",
+        error: `Internal server Error`,
+      });
+    }
+  },
+
+  getOrderById: async (req, res) => {
+    try {
+      const orderId = req.params?.orderId;
+
+      // get desired order data
+      const order = await Order.findById(orderId);
+
+      if (order) {
+        res.status(200).send({
+          status: "success",
+          message: "Order founded",
+          data: order,
+        });
+      } else {
+        res.status(400).json({
+          status: "fail",
+          error: "Order not found",
+        });
+      }
+    } catch (error) {
+      console.log("internal server error", error);
+      if (error.name === "CastError") {
+        res.status(500).json({
+          status: "fail",
+          error: `Invalid ID fomate `,
+        });
+      } else {
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error `,
+        });
+      }
+    }
+  },
+
+  updateOrderStatus: async (req, res) => {
+    try {
+      const orderId = req?.params?.orderId;
+
+      const updateFields = req.body;
+
+      const order = await Order.findById(orderId);
+
+      if (!order) {
+        return res
+          .status(404)
+          .json({ status: "fail", error: "Order not found" });
+      }
+
+      const { status } = req.body;
+      if (
+        status === "Pending" ||
+        status === "Order Processing" ||
+        status === "Order At Local Facility" ||
+        status === "Order Out For Delivery" ||
+        status === "Order Completed"
+      ) {
+        const updatedOrder = await order.updateOne(
+          { _id: orderId },
+          { $set: { status: status } }
+        );
+
+        updatedOrder &&
+          res.status(200).json({
+            status: "success",
+            message: "Order updated successfully",
+            data: updatedOrder,
+          });
+      } else {
+        return res
+          .status(404)
+          .json({ status: "fail", error: "Invalid Status" });
+      }
+    } catch (error) {
+      if (error.name === "ValidationError") {
+        const validationErrors = {};
+
+        error.inner &&
+          error.inner.length > 0 &&
+          error.inner.forEach((validationError) => {
+            validationErrors[validationError.path] = validationError.message;
+          });
+
+        const entries = Object.entries(validationErrors);
+        entries &&
+          entries.length > 0 &&
+          res.status(400).json({
+            status: "fail",
+            error: entries[0][1],
+          });
+      } else {
+        console.log("internal server error", error);
+        res.status(500).json({
+          status: "fail",
+          error: `Internal server Error`,
+        });
+      }
     }
   },
 

@@ -68,6 +68,17 @@ router.put("/updateProduct/:productId", adminController.updateProduct);
 //---Delete Product by id
 router.delete("/deleteProduct/:productId", adminController.deleteProduct);
 
+// <----------Orders------------------------>
+
+// add-order
+router.post("/addOrder", adminController.addOrder);
+// get all order
+router.get("/orders", adminController.getAllOrder);
+// get single order
+router.get("/order/:orderId", adminController.getOrderById);
+// dynamic update any field(Single or multiple) of order
+router.put("/updateOrder/status/:orderId", adminController.updateOrderStatus);
+
 // <----------------author--------------------->
 
 // add-author

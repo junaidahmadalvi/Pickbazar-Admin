@@ -42,6 +42,32 @@ router.put("/updateGroup/:groupId", adminController.updateGroup);
 //---Delete Group by id
 router.delete("/deletegroup/:groupId", adminController.deleteGroup);
 
+// <-------------categories----------->
+
+// add-category
+router.post("/addCategory", adminController.addCategory);
+// get all categories
+router.get("/categories", adminController.getAllCategory);
+// get single category
+router.get("/category/:categoryId", adminController.getCategoryById);
+// dynamic update any field(Single or multiple) of category
+router.put("/updateCategory/:categoryId", adminController.updateCategory);
+//---Delete Category by id
+router.delete("/deleteCategory/:categoryId", adminController.deleteCategory);
+
+// <----------Products------------------------>
+
+// add-product
+router.post("/addProduct", adminController.addProduct);
+// get all product
+router.get("/products", adminController.getAllProduct);
+// get single product
+router.get("/product/:productId", adminController.getProductById);
+// dynamic update any field(Single or multiple) of product
+router.put("/updateProduct/:productId", adminController.updateProduct);
+//---Delete Product by id
+router.delete("/deleteProduct/:productId", adminController.deleteProduct);
+
 // <----------------author--------------------->
 
 // add-author
